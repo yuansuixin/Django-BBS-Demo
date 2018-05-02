@@ -25,4 +25,8 @@ urlpatterns = [
     url(r'^read/', views.read),
     url(r'^edit/', views.edit),
     url(r'^search/', views.search),
+    url(r'^hotsearch/', views.top10),
 ]
+
+
+

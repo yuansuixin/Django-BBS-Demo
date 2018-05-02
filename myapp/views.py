@@ -1,10 +1,12 @@
-from django.core import cache
+
 from django.shortcuts import render, redirect
 
 # Create your views here.
 from math import ceil
 
-from common.keys import POST_KEY
+from common import rds
+from common.keys import READ_COUNT
+from myapp.helper import page_cache, read_count
 from myapp.models import Articles
 
 
@@ -23,7 +25,6 @@ def post_list(request):
     end = start + 5
     # 按照时间顺序排序，最早发布的在最前面
     posts = Articles.objects.all().order_by('-id')[start:end]
-
     return render(request, 'post_list.html',
                   {'posts': posts, 'pages': range(1, pages + 1)})
 
@@ -37,17 +38,11 @@ def create(request):
     else:
         return render(request, 'create.html')
 
+@read_count
+@page_cache(3000)
 def read(request):
     post_id = int(request.GET.get('post_id', 1))
-    # 从缓存中获取
-    key = POST_KEY % post_id
-    post = cache.get(key)
-    if post is None:
-        # 如果缓存中没有，从数据库中获取，同时添加到缓存
-        post = Articles.objects.get(id=post_id)
-        cache.set(key,post)
-
-    print('************************888')
+    post = Articles.objects.get(id=post_id)
     return render(request, 'read.html', {'post': post})
 
 
@@ -61,9 +56,6 @@ def edit(request):
         post.title = request.POST.get('title')
         post.content = request.POST.get('content')
         post.save()
-        # 添加到缓存
-        key = POST_KEY % post_id
-        cache.set(key,post)
         return redirect('/read/?post_id=%s' % post.id)
     else:
         post_id = int(request.GET.get('post_id', 1))
@@ -76,6 +68,15 @@ def search(request):
     print('******777*********',keyword)
     posts = Articles.objects.filter(content__contains=keyword)
     return render(request, 'search.html', {'posts': posts})
+
+
+def top10(request):
+    print('5678987656789')
+    post_id = int(request.GET.get('post_id', 1))
+    print(post_id)
+    lists = rds.zrevrange(READ_COUNT,0,-1,withscores=True)
+    print(lists)
+    return render(request,'top10.html',{'lists':lists})
 
 
 
