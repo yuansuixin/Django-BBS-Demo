@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect
 # Create your views here.
 from math import ceil
 
+from common.keys import POST_KEY
 from myapp.models import Articles
 
 
@@ -39,7 +40,7 @@ def create(request):
 def read(request):
     post_id = int(request.GET.get('post_id', 1))
     # 从缓存中获取
-    key = 'Post-%s'% post_id
+    key = POST_KEY % post_id
     post = cache.get(key)
     if post is None:
         # 如果缓存中没有，从数据库中获取，同时添加到缓存
@@ -61,7 +62,7 @@ def edit(request):
         post.content = request.POST.get('content')
         post.save()
         # 添加到缓存
-        key = 'Post-%s' % post_id
+        key = POST_KEY % post_id
         cache.set(key,post)
         return redirect('/read/?post_id=%s' % post.id)
     else:
