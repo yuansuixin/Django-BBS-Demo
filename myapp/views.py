@@ -1,3 +1,4 @@
+from django.core import cache
 from django.shortcuts import render, redirect
 
 # Create your views here.
@@ -37,7 +38,14 @@ def create(request):
 
 def read(request):
     post_id = int(request.GET.get('post_id', 1))
-    post = Articles.objects.get(id=post_id)
+    # 从缓存中获取
+    key = 'Post-%s'% post_id
+    post = cache.get(key)
+    if post is None:
+        # 如果缓存中没有，从数据库中获取，同时添加到缓存
+        post = Articles.objects.get(id=post_id)
+        cache.set(key,post)
+
     print('************************888')
     return render(request, 'read.html', {'post': post})
 
@@ -52,6 +60,9 @@ def edit(request):
         post.title = request.POST.get('title')
         post.content = request.POST.get('content')
         post.save()
+        # 添加到缓存
+        key = 'Post-%s' % post_id
+        cache.set(key,post)
         return redirect('/read/?post_id=%s' % post.id)
     else:
         post_id = int(request.GET.get('post_id', 1))
